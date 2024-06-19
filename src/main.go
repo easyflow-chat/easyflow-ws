@@ -1,7 +1,5 @@
 package main
 
-import "log"
+func main(){
 
-func main() {
-	log.Println("Hello World")
 }
