@@ -16,7 +16,13 @@ func NewVector[T comparable]() *Vector[T] {
 	}
 }
 
-func (v *Vector[T]) Write(element T) {
+func (v *Vector[T]) Write(elements []T) {
+	v.mtx.Lock()
+	defer v.mtx.Unlock()
+	*v.data = elements
+}
+
+func (v *Vector[T]) Push(element T) {
 	v.mtx.Lock()
 	defer v.mtx.Unlock()
 	*v.data = append(*v.data, element)
@@ -70,4 +76,16 @@ func (v *Vector[T]) RemoveByIndex(index int) bool {
 		return true
 	}
 	return false
+}
+
+func (v *Vector[T]) Pop() (T, bool) {
+	v.mtx.Lock()
+	defer v.mtx.Unlock()
+	if len(*v.data) == 0 {
+		var zero T
+		return zero, false
+	}
+	element := (*v.data)[len(*v.data)-1]
+	*v.data = (*v.data)[:len(*v.data)-1]
+	return element, true
 }
