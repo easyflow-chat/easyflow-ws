@@ -15,14 +15,14 @@ func WebsocketHandler(client *net.Client) {
 		if err != nil {
 			wsLogger.PrintfError("While reading from user an error occured: %v", err)
 			client.Close()
-			break;
+			break
 		}
 		client.OutBuffer <- client.InBuffer
 		err = client.Send()
 		if err != nil {
 			wsLogger.PrintfError("While sending to user an error occured: %v", err)
 			client.Close()
-			break;
+			break
 		}
 	}
 	wsLogger.PrintfInfo("Closed connection with: %s", client.Info.Uid)

@@ -29,7 +29,7 @@ func NewClient(conn *websocket.Conn, info *ClientInfo) *Client {
 	c := Client{
 		Info:      info,
 		conn:      conn,
-		OutBuffer: make(chan *common.Vector[byte], 10),
+		OutBuffer: make(chan *common.Vector[byte]),
 		InBuffer:  common.NewVector[byte](),
 	}
 	return &c
