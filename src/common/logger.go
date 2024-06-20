@@ -22,7 +22,7 @@ const (
 )
 
 type Logger struct {
-	LogMutex sync.Mutex
+	logMutex sync.Mutex
 	Target   io.Writer
 	Module   atomic.Value
 }
@@ -47,16 +47,16 @@ func getLocalTime() string {
 }
 
 func (l *Logger) Println(message interface{}) {
-	l.LogMutex.Lock()
-	defer l.LogMutex.Unlock()
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
 	module_name := l.Module.Load().(string)
 	_, _ = l.Target.Write([]byte(string(green) + "[" + getLocalTime() + "][" + module_name + "] " + message.(string) + string(reset) + "\n"))
 }
 
 func (l *Logger) Printf(format string, args ...interface{}) {
-	l.LogMutex.Lock()
-	defer l.LogMutex.Unlock()
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
 	module_name := l.Module.Load().(string)
 	formattedMessage := fmt.Sprintf(format, args...)
@@ -64,8 +64,8 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 }
 
 func (l *Logger) PrintfError(format string, args ...interface{}) {
-	l.LogMutex.Lock()
-	defer l.LogMutex.Unlock()
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
 	module_name := l.Module.Load().(string)
 	formattedMessage := fmt.Sprintf(format, args...)
@@ -73,8 +73,8 @@ func (l *Logger) PrintfError(format string, args ...interface{}) {
 }
 
 func (l *Logger) PrintfWarning(format string, args ...interface{}) {
-	l.LogMutex.Lock()
-	defer l.LogMutex.Unlock()
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
 	module_name := l.Module.Load().(string)
 	formattedMessage := fmt.Sprintf(format, args...)
@@ -82,8 +82,8 @@ func (l *Logger) PrintfWarning(format string, args ...interface{}) {
 }
 
 func (l *Logger) PrintfInfo(format string, args ...interface{}) {
-	l.LogMutex.Lock()
-	defer l.LogMutex.Unlock()
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
 	module_name := l.Module.Load().(string)
 	formattedMessage := fmt.Sprintf(format, args...)

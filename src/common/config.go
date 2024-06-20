@@ -9,6 +9,7 @@ import (
 )
 
 type Config struct {
+	Port string
 }
 
 func getEnv(key, fallback string) string {
@@ -33,5 +34,7 @@ func LoadDefaultConfig() *Config {
 		fmt.Println("Error loading .env file: ", err)
 	}
 
-	return &Config{}
+	return &Config{
+		Port: getEnv("PORT", "4001"),
+	}
 }
