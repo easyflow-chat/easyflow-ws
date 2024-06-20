@@ -2,10 +2,13 @@ package net
 
 import (
 	"easyflow-ws/src/common"
+	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+var tempLogger = common.NewLogger(os.Stdout, "TempLogger")
 
 const (
 	ReadDeadline = 4 * time.Second
@@ -16,19 +19,19 @@ type ClientInfo struct {
 }
 
 type Client struct {
-	info       *ClientInfo
-	conn       *websocket.Conn
-	out_buffer chan *common.Vector[byte]
-	in_buffer  *common.Vector[byte]
+	Info      *ClientInfo
+	conn      *websocket.Conn
+	OutBuffer chan *common.Vector[byte]
+	InBuffer  *common.Vector[byte]
 }
 
 func NewClient(conn *websocket.Conn, info *ClientInfo) *Client {
 	c := Client{
-		info: info,
-		conn: conn,
+		Info:      info,
+		conn:      conn,
+		OutBuffer: make(chan *common.Vector[byte], 10),
+		InBuffer:  common.NewVector[byte](),
 	}
-	c.out_buffer <- common.NewVector[byte]()
-	c.in_buffer = common.NewVector[byte]()
 	return &c
 }
 
@@ -37,7 +40,8 @@ func (c *Client) Close() {
 }
 
 func (c *Client) Send() error {
-	val := <-c.out_buffer
+	val := <-c.OutBuffer
+	tempLogger.PrintfInfo("Sending message: %s", val.Devectorize())
 	return c.conn.WriteMessage(websocket.TextMessage, val.Devectorize())
 }
 
@@ -46,6 +50,6 @@ func (c *Client) Read() error {
 	if err != nil {
 		return err
 	}
-	c.in_buffer = common.Vectorize(msg)
+	c.InBuffer = common.Vectorize(msg)
 	return nil
 }

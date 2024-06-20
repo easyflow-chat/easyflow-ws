@@ -21,7 +21,7 @@ func (h *Hub) Broadcast(msg string) error {
 	if len(h.Clients) > 0 {
 		for _, client := range h.Clients {
 			bytes := []byte(msg)
-			client.out_buffer <- common.Vectorize(bytes)
+			client.OutBuffer <- common.Vectorize(bytes)
 			err := client.Send()
 			if err != nil {
 				return err

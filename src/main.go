@@ -11,7 +11,7 @@ import (
 
 func injectHub(h *net.Hub) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set("net", h)
+		c.Set("hub", h)
 		c.Next()
 	}
 }
