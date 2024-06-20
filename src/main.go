@@ -9,20 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func injectHub(h *net.Hub) gin.HandlerFunc {
+func injectHub(h *net.Supervisor) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set("hub", h)
+		c.Set("super", h)
 		c.Next()
 	}
 }
-
 func main() {
 	config := common.LoadDefaultConfig()
 	logger := common.NewLogger(os.Stdout, "main")
-	hub := net.NewHub()
+	supervisor := net.NewSupervisor()
 
 	router := gin.Default()
-	router.Use(injectHub(hub))
+	router.Use(injectHub(supervisor))
 	router.GET("/ws", api.WebsocketListener)
 
 	logger.PrintfInfo("Starting ws-worker on port %s", config.Port)

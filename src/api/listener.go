@@ -3,50 +3,63 @@ package api
 import (
 	"easyflow-ws/src/common"
 	"easyflow-ws/src/net"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
+	"net/http"
 	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{}
 var logger = common.NewLogger(os.Stdout, "WebsocketListener")
 
 func WebsocketListener(c *gin.Context) {
-	raw_hub, ok := c.Get("hub")
+	raw_sup, ok := c.Get("super")
 	if !ok {
-		logger.PrintfError("Failed to retrieve Hub. Exiting")
-		panic("")
+		logger.PrintfError("Failed to retrieve Supervisor. Exiting")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Supervisor retrieval failed"})
+		return
 	}
-	hub, ok := raw_hub.(*net.Hub)
+	sup, ok := raw_sup.(*net.Supervisor)
 	if !ok {
-		logger.PrintfError("Failed to convert Hub. Exiting")
-		os.Exit(1)
-	}
-
-	req := c.Request
-	res := c.Writer
-	conn, err := upgrader.Upgrade(res, req, nil)
-	if err != nil {
-		logger.PrintfError("An error occured while trying to upgrade to websocket: %v", err)
-		panic("")
+		logger.PrintfError("Failed to convert Supervisor. Exiting")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Supervisor conversion failed"})
+		return
 	}
 
 	userId := c.Query("userId")
-	logger.PrintfInfo("%s", userId)
 	if userId == "" {
 		logger.PrintfError("No userid was provided")
-		panic("")
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "User ID required"})
+		return
 	}
 
 	info := net.ClientInfo{
-		Uid: userId,
+		Uid:      userId,
+		SocketId: uuid.New().String(),
 	}
-	client := net.NewClient(conn, &info)
-	logger.Printf("hal")
 
-	hub.Insert(client)
-	// In your WebsocketListener function
-	logger.PrintfInfo("Calling WebsocketHandler for user %s", userId)
-	WebsocketHandler(client) // Check if you meant to call this asynchronously with 'go'
+	// Upgrade to WebSocket first
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		logger.PrintfError("WebSocket upgrade failed: %v", err)
+		return
+	}
 
+	go func() {
+		client := net.NewClient(conn, &info)
+		defer client.Close()
+		sup.Insert(client)
+		defer sup.Remove(client)
+
+		logger.PrintfInfo("Accepted user with SocketId: %s", client.Info.SocketId)
+		logger.PrintfInfo("Active connections: %d", len(sup.Clients)) // here we get
+		err = WebsocketHandler(client)                                // fails here
+		logger.Printf("WebsocketHandler returned: %v", err)           // here we dont get
+		if err != nil {
+			logger.PrintfError("An error occurred while handling websocket: %v", err)
+		}
+		logger.PrintfInfo("Closed connection with: %s", client.Info.SocketId)
+	}()
 }

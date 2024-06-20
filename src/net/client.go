@@ -15,7 +15,8 @@ const (
 )
 
 type ClientInfo struct {
-	Uid string
+	SocketId string
+	Uid      string
 }
 
 type Client struct {
@@ -29,7 +30,7 @@ func NewClient(conn *websocket.Conn, info *ClientInfo) *Client {
 	c := Client{
 		Info:      info,
 		conn:      conn,
-		OutBuffer: make(chan *common.Vector[byte]),
+		OutBuffer: make(chan *common.Vector[byte], 1),
 		InBuffer:  common.NewVector[byte](),
 	}
 	return &c
