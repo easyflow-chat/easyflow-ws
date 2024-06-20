@@ -5,6 +5,7 @@ import (
 	"easyflow-ws/src/net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -28,6 +29,20 @@ func WebsocketListener(c *gin.Context) {
 		return
 	}
 
+	raw_cfg, ok := c.Get("cfg")
+	if !ok {
+		logger.PrintfError("Failed to retrieve Config. Exiting")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Config retrieval failed"})
+		return
+	}
+
+	cfg, ok := raw_cfg.(*common.Config)
+	if !ok {
+		logger.PrintfError("Failed to convert Config. Exiting")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Config conversion failed"})
+		return
+	}
+
 	userId := c.Query("userId")
 	if userId == "" {
 		logger.PrintfError("No userid was provided")
@@ -40,7 +55,6 @@ func WebsocketListener(c *gin.Context) {
 		SocketId: uuid.New().String(),
 	}
 
-	// Upgrade to WebSocket first
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		logger.PrintfError("WebSocket upgrade failed: %v", err)
@@ -54,9 +68,9 @@ func WebsocketListener(c *gin.Context) {
 		defer sup.Remove(client)
 
 		logger.PrintfInfo("Accepted user with SocketId: %s", client.Info.SocketId)
-		logger.PrintfInfo("Active connections: %d", len(sup.Clients)) // here we get
-		err = WebsocketHandler(client)                                // fails here
-		logger.Printf("WebsocketHandler returned: %v", err)           // here we dont get
+		logger.PrintfInfo("Active connections: %d", len(sup.Clients))
+		err = WebsocketHandler(client, time.Duration(cfg.Timeout))
+		logger.Printf("WebsocketHandler returned: %v", err)
 		if err != nil {
 			logger.PrintfError("An error occurred while handling websocket: %v", err)
 		}

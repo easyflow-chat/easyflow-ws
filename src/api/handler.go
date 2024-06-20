@@ -10,27 +10,25 @@ import (
 
 var wsLogger = common.NewLogger(os.Stdout, "WebsocketHandler")
 
-func WebsocketHandler(client *net.Client) error {
-	timeoutDuration := 5 * time.Second
+func WebsocketHandler(client *net.Client, timeout time.Duration) error {
+	timeoutDuration := timeout * time.Minute
 	timer := time.NewTimer(timeoutDuration)
-	defer timer.Stop() // Ensure the timer is cleaned up properly
+	defer timer.Stop()
 
 	for {
-		// Set up the timer for each loop iteration
 		if !timer.Stop() {
 			<-timer.C
 		}
 		timer.Reset(timeoutDuration)
 
-		// Blocking read using a goroutine to handle the timeout
-		msgChan := make(chan error, 1)
+		errChan := make(chan error, 1)
 		go func() {
 			err := client.Read()
-			msgChan <- err
+			errChan <- err
 		}()
 
 		select {
-		case err := <-msgChan:
+		case err := <-errChan:
 			if err != nil {
 				wsLogger.PrintfError("While reading from user an error occurred: %v", err)
 				client.Close()

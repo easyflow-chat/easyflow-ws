@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	Port string
+	Port    string
+	Timeout int
 }
 
 func getEnv(key, fallback string) string {
@@ -35,6 +36,7 @@ func LoadDefaultConfig() *Config {
 	}
 
 	return &Config{
-		Port: getEnv("PORT", "4001"),
+		Port:    getEnv("PORT", "4001"),
+		Timeout: getEnvInt("TIMEOUT", 5),
 	}
 }
