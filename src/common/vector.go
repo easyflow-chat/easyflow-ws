@@ -16,6 +16,20 @@ func NewVector[T comparable]() *Vector[T] {
 	}
 }
 
+func Vectorize[T comparable](input_val []T) *Vector[T] {
+	transformed := NewVector[T]()
+	for _, val := range input_val {
+		transformed.Push(val)
+	}
+	return transformed
+}
+
+func (v *Vector[T]) Devectorize() []T {
+	arr := make([]T, v.Len())
+	arr = append(arr, *v.data...)
+	return arr
+}
+
 func (v *Vector[T]) Write(elements []T) {
 	v.mtx.Lock()
 	defer v.mtx.Unlock()
