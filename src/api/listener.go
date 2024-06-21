@@ -3,6 +3,7 @@ package api
 import (
 	"easyflow-ws/src/common"
 	"easyflow-ws/src/net"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -12,41 +13,61 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 var logger = common.NewLogger(os.Stdout, "WebsocketListener")
 
 func WebsocketListener(c *gin.Context) {
 	raw_sup, ok := c.Get("super")
 	if !ok {
 		logger.PrintfError("Failed to retrieve Supervisor. Exiting")
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Supervisor retrieval failed"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiError{
+			ErrorCode: http.StatusInternalServerError,
+			Details:   "Failed to retrieve Supervisor from context",
+		})
 		return
 	}
 	sup, ok := raw_sup.(*net.Supervisor)
 	if !ok {
 		logger.PrintfError("Failed to convert Supervisor. Exiting")
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Supervisor conversion failed"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiError{
+			ErrorCode: http.StatusInternalServerError,
+			Details:   "Failed to convert Supervisor",
+		})
 		return
 	}
 
 	raw_cfg, ok := c.Get("cfg")
 	if !ok {
 		logger.PrintfError("Failed to retrieve Config. Exiting")
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Config retrieval failed"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiError{
+			ErrorCode: http.StatusInternalServerError,
+			Details:   "Failed to retrieve Config from context",
+		})
 		return
 	}
 
 	cfg, ok := raw_cfg.(*common.Config)
 	if !ok {
 		logger.PrintfError("Failed to convert Config. Exiting")
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Config conversion failed"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiError{
+			ErrorCode: http.StatusInternalServerError,
+			Details:   "Failed to convert Config",
+		})
 		return
 	}
 
 	userId := c.Query("userId")
 	if userId == "" {
 		logger.PrintfError("No userid was provided")
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "User ID required"})
+		c.JSON(http.StatusInternalServerError, ApiError{
+			ErrorCode: http.StatusBadRequest,
+			Details:   "No userid was provided",
+		})
 		return
 	}
 
@@ -58,6 +79,10 @@ func WebsocketListener(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		logger.PrintfError("WebSocket upgrade failed: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiError{
+			ErrorCode: http.StatusInternalServerError,
+			Details:   fmt.Errorf("WebSocket upgrade failed: %v", err),
+		})
 		return
 	}
 
